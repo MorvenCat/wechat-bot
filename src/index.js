@@ -8,6 +8,7 @@ import fs from 'fs'
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { defaultMessage } from './wechaty/sendMessage.js'
+import { startRssWatch } from './Rss/index.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -50,7 +51,7 @@ async function onFriendShip(friendship) {
 }
 
 /**
- * 消息发送
+ * 回复
  * @param msg
  * @param isSharding
  * @returns {Promise<void>}
@@ -102,7 +103,10 @@ bot.on('error', (e) => {
 function botStart() {
   bot
     .start()
-    .then(() => console.log('Start to log in wechat...'))
+    .then(() => {
+      console.log('Start to log in wechat...')
+      startRssWatch(bot) //启动Rss模块
+    })
     .catch((e) => console.error('❌ botStart error: ', e))
 }
 
@@ -154,6 +158,12 @@ function handleStart(type) {
       }
       console.log('❌ 请先配置.env文件中的 DIFY_API_KEY')
       break
+    case 'Rss':
+      if (env.RSS_URLS) {
+        return botStart()
+      }
+      console.log('❌ 请先配置.env文件中的 RSS_URLS')
+      break
     default:
       console.log('❌ 服务类型错误, 目前支持： ChatGPT | Kimi | Xunfei')
   }
@@ -166,6 +176,7 @@ export const serveList = [
   { name: 'deepseek-free', value: 'deepseek-free' },
   { name: '302AI', value: '302AI' },
   { name: 'dify', value: 'dify' },
+  { name: 'Rss', value: 'Rss' },
   // ... 欢迎大家接入更多的服务
 ]
 const questions = [

@@ -4,11 +4,12 @@ import { getXunfeiReply } from '../xunfei/index.js'
 import { getDeepSeekFreeReply } from '../deepseek-free/index.js'
 import { get302AiReply } from '../302ai/index.js'
 import { getDifyReply } from '../dify/index.js'
+import { getRssMsg } from '../Rss/index.js'
 
 /**
  * 获取ai服务
  * @param serviceType 服务类型 'GPT' | 'Kimi'
- * @returns {Promise<void>}
+ * @returns {string}
  */
 export function getServe(serviceType) {
   switch (serviceType) {
@@ -24,6 +25,8 @@ export function getServe(serviceType) {
       return get302AiReply
     case 'dify':
       return getDifyReply
+    case 'Rss':
+      return getRssMsg()
     default:
       return getGptReply
   }

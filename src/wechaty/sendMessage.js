@@ -63,6 +63,21 @@ export async function defaultMessage(msg, bot, ServiceType = 'GPT') {
 }
 
 /**
+ * 消息广播
+ */
+export async function broadcastMessage(bot, ServiceType = 'Rss', msg) {
+  for (let roomName of roomWhiteList) {
+    const room = await bot.Room.find({ topic: roomName })
+    if (room) {
+      // 检查 room 是否找到
+      await room.say(msg)
+    } else {
+      console.error(`Room not found: ${roomName}`) // 记录未找到的房间
+    }
+  }
+}
+
+/**
  * 分片消息发送
  * @param message
  * @param bot
