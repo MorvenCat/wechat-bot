@@ -100,6 +100,7 @@ bot.on('error', (e) => {
 })
 
 // 启动微信机器人
+/*
 function botStart() {
   bot
     .start()
@@ -108,6 +109,17 @@ function botStart() {
       startRssWatch(bot) //启动Rss模块
     })
     .catch((e) => console.error('❌ botStart error: ', e))
+}
+*/
+async function botStart() {
+  try {
+    await bot.start()
+    console.log('Start to log in wechat...')
+    // 启动 RSS 模块，并且异步运行，不会阻塞其他任务
+    startRssWatch(bot)
+  } catch (e) {
+    console.error('❌ botStart error: ', e)
+  }
 }
 
 process.on('uncaughtException', (err) => {
