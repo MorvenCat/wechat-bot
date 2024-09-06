@@ -26,10 +26,10 @@ export async function getChatGPTReply(content) {
   console.log('🚀🚀🚀 / reply', reply)
   return reply
 
-  // // 如果你想要连续语境对话，可以使用下面的代码
-  // const conversation = api.getConversation();
-  // return await conversation.sendMessage(content, {
-  //   //  "ChatGPT 请求超时！最好开下全局代理。"
-  //   timeoutMs: 2 * 60 * 1000,
-  // });
+  // 如果你想要连续语境对话，可以使用下面的代码
+  const conversation = api.getConversation()
+  return await conversation.sendMessage(content, {
+    //  "ChatGPT 请求超时！最好开下全局代理。"
+    timeoutMs: 2 * 60 * 1000,
+  })
 }
