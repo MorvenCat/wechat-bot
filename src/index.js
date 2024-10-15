@@ -9,6 +9,7 @@ import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { defaultMessage } from './wechaty/sendMessage.js'
 import { startRssWatch } from './Rss/index.js'
+import { initializeDatabase } from './sql/database.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -202,22 +203,30 @@ const questions = [
 ]
 
 function init() {
-  if (env.SERVICE_TYPE) {
-    // 判断env中SERVICE_TYPE是否配置和并且属于serveList数组中value的值
-    if (serveList.find((item) => item.value === env.SERVICE_TYPE)) {
-      handleStart(env.SERVICE_TYPE)
+  try {
+    // 初始化数据库
+    initializeDatabase()
+    console.log('✅ 数据库初始化成功')
+    if (env.SERVICE_TYPE) {
+      // 判断env中SERVICE_TYPE是否配置和并且属于serveList数组中value的值
+      if (serveList.find((item) => item.value === env.SERVICE_TYPE)) {
+        handleStart(env.SERVICE_TYPE)
+      } else {
+        console.log('❌ 请正确配置.env文件中的 SERVICE_TYPE，或者删除该项')
+      }
     } else {
-      console.log('❌ 请正确配置.env文件中的 SERVICE_TYPE，或者删除该项')
+      inquirer
+        .prompt(questions)
+        .then((res) => {
+          handleStart(res.serviceType)
+        })
+        .catch((error) => {
+          console.log('❌ inquirer error:', error)
+        })
     }
-  } else {
-    inquirer
-      .prompt(questions)
-      .then((res) => {
-        handleStart(res.serviceType)
-      })
-      .catch((error) => {
-        console.log('❌ inquirer error:', error)
-      })
+  } catch (error) {
+    // 捕获数据库初始化错误
+    console.error('❌ 数据库初始化失败:', error)
   }
 }
 

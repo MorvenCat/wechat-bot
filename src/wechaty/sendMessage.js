@@ -1,4 +1,8 @@
 import dotenv from 'dotenv'
+import { getServe } from './serve.js'
+import { loadAliasWhiteList, loadRoomWhiteList } from '../sql/sql.js'
+import { command } from '../command.js'
+
 // 加载环境变量
 dotenv.config()
 const env = dotenv.config().parsed // 环境参数
@@ -6,17 +10,23 @@ const env = dotenv.config().parsed // 环境参数
 // 从环境变量中导入机器人的名称
 const botName = env.BOT_NAME
 
+// 从环境变量中导入管理员
+const opList = env.OP_NAME ? env.OP_NAME.split(',') : []
+
 // 从环境变量中导入需要自动回复的消息前缀，默认配空串或不配置则等于无前缀
 const autoReplyPrefix = env.AUTO_REPLY_PREFIX ? env.AUTO_REPLY_PREFIX : ''
 
-// 从环境变量中导入联系人白名单
-const aliasWhiteList = env.ALIAS_WHITELIST ? env.ALIAS_WHITELIST.split(',') : []
+// 从数据库中导入联系人白名单
+async function getAliasWhiteLists() {
+  const aliasWhiteList = await loadAliasWhiteList()
+  return aliasWhiteList
+}
 
-// 从环境变量中导入群聊白名单
-const roomWhiteList = env.ROOM_WHITELIST ? env.ROOM_WHITELIST.split(',') : []
-
-import { getServe } from './serve.js'
-
+// 从数据库中导入群聊白名单
+async function getRoomWhiteLists() {
+  const roomWhiteList = await loadRoomWhiteList()
+  return roomWhiteList
+}
 /**
  * 默认消息发送
  * @param msg
@@ -25,6 +35,8 @@ import { getServe } from './serve.js'
  * @returns {Promise<void>}
  */
 export async function defaultMessage(msg, bot, ServiceType = 'GPT') {
+  const roomWhiteList = await getRoomWhiteLists()
+  const aliasWhiteList = await getAliasWhiteLists()
   const getReply = getServe(ServiceType)
   const contact = msg.talker() // 发消息人
   const receiver = msg.to() // 消息接收人
@@ -35,6 +47,7 @@ export async function defaultMessage(msg, bot, ServiceType = 'GPT') {
   const remarkName = await contact.alias() // 备注名称
   const name = await contact.name() // 微信名称
   const isText = msg.type() === bot.Message.Type.Text // 消息类型是否为文本
+  const isOpList = opList.includes(name) || opList.includes(remarkName) // 是否为管理员消息
   const isRoom = roomWhiteList.includes(roomName) && content.includes(`${botName}`) // 是否在群聊白名单内并且艾特了机器人
   const isAlias = aliasWhiteList.includes(remarkName) || aliasWhiteList.includes(name) // 发消息的人是否在联系人白名单内
   const isBotSelf = botName === remarkName || botName === name // 是否是机器人自己
@@ -49,6 +62,17 @@ export async function defaultMessage(msg, bot, ServiceType = 'GPT') {
       const response = await getReply(question)
       await room.say(response)
     }
+
+    // 管理员消息处理
+    if (isOpList && !room && content.startsWith('/')) {
+      const cmd = (await msg.mentionText()) || content.replace('/', '')
+      console.log('🌸🌸🌸 / cmd: ', cmd)
+      // 根据 content 是否以指定的前缀开头来决定执行的逻辑
+      const reply = await command(cmd)
+      console.log(reply)
+      await contact.say(reply)
+    }
+
     // 私人聊天，白名单内的直接发送
     // 私人聊天直接匹配自动回复前缀
     if (isAlias && !room && content.trimStart().startsWith(`${autoReplyPrefix}`)) {
@@ -66,6 +90,8 @@ export async function defaultMessage(msg, bot, ServiceType = 'GPT') {
  * 消息广播
  */
 export async function broadcastMessage(bot, ServiceType = 'Rss', msg) {
+  const roomWhiteList = await getRoomWhiteLists()
+  console.log('1' + roomWhiteList)
   for (let roomName of roomWhiteList) {
     const room = await bot.Room.find({ topic: roomName })
     if (room) {
