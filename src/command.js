@@ -56,7 +56,7 @@ async function checkAndRemoveItem(loadFunction, removeFunction, item, itemName) 
 const commandStrategies = {
   group: {
     add: async (args) => {
-      const roomName = args[0]
+      const roomName = args[1] ? args[0] + ' ' + args[1] : args[0]
       try {
         await addRoomToWhiteList(roomName)
         return `Group "${roomName}" has been added.`
@@ -65,7 +65,7 @@ const commandStrategies = {
       }
     },
     del: async (args) => {
-      const roomName = args[0]
+      const roomName = args[1] ? args[0] + ' ' + args[1] : args[0]
       try {
         await removeRoomFromWhiteList(roomName)
         return `Group "${roomName}" has been deleted.`
@@ -134,7 +134,16 @@ const commandStrategies = {
 }
 
 export async function command(cmd) {
-  const { entity, action, args } = parseCommand(cmd)
+  let { entity, action, args } = parseCommand(cmd)
+
+  // 遍历 args 数组，替换其中的 &amp; 并将结果保存回 args 数组
+  args = args.map((arg) => {
+    if (typeof arg === 'string') {
+      return arg.replace(/&amp;/g, '&')
+    }
+    return arg // 如果不是字符串，保持原样
+  })
+
   console.log('Command:', cmd)
   console.log('Parsed:', { entity, action, args })
 
